@@ -97,7 +97,7 @@ const eventCards={
 const tanbaEvents=[
 {t:"来世を信じるも信じないも、あなた次第だ。",e:s=>{[s.virtue,s.sin]=[s.sin,s.virtue]}},
 {t:"心の準備はいいですか？",e:s=>s.virtue+=30},{t:"生きるとは、サイコロを振ること。",e:s=>s.sin+=30},
-{t:"徳も罪も裏返し。",e:s=>switchWorld('強制移動: 死後へ', '死後')},{t:"あなたの来世、少し見えました。",e:s=>reincarnate(true)},
+{t:"徳も罪も裏返し。",e:s=>switchWorld('強制移動: 死後へ', '死後')},{t:"あなたの来世、少し見えました。",e:s=>judgeAfterlifeOnly()},
 {t:"神託：次回は必ず6。",e:s=>s.forceSix=true},{t:"記憶が浄化された。",e:s=>{s.virtue=0;s.sin=0}},{t:"因果が増幅。",e:s=>{s.virtue*=2;s.sin*=2}},
 {t:"祝福で進化。",e:s=>s.rank=Math.min(3,s.rank+1)},{t:"試練で退化。",e:s=>s.rank=Math.max(0,s.rank-1)}
 ];
@@ -121,7 +121,7 @@ async function movePlayer(step){for(let i=0;i<step;i++){await new Promise(res=>s
 function randomFrom(a){return a[Math.floor(Math.random()*a.length)]}
 function handleSquare(){const t=boardData[gameState.world][gameState.position];
 if(t==='goal'&&gameState.world==='現世'){checkGoal();if(gameState.over)return;}
-if(t==='goal'&&(gameState.world==='死後'||gameState.world==='深層死後')){showCard('運命の審判',`総徳 ${gameState.virtue} / 総罪 ${gameState.sin} を集計中…`);reincarnate();return;}
+if(t==='goal'&&(gameState.world==='死後'||gameState.world==='深層死後')){showCard('運命の審判',`総徳 ${gameState.virtue} / 総罪 ${gameState.sin} を集計中…`);judgeAfterlifeOnly();return;}
 if(t==='death'){switchWorld('死亡マス: 現世から死後へ','死後');return;}
 if(t==='dok'){gameState.innerTrips++;gameState.sin+=6;switchWorld('どっくり発動: 深層死後へ引きずり込まれた','深層死後');return;}
 
@@ -145,6 +145,7 @@ gameState.virtue=Math.max(0,gameState.virtue);gameState.sin=Math.max(0,gameState
 function showCard(title,text){document.getElementById('cardTitle').textContent=title;document.getElementById('cardText').textContent=text;document.getElementById('card').classList.add('show');appendLog(`${title}: ${text}`);beep(700,0.06)}
 function showTanbaEvent(){const e=randomFrom(tanbaEvents);document.getElementById('tanbaMsg').textContent=e.t;document.getElementById('tanbaFx').classList.add('show');e.e(gameState);appendLog(`丹波イベント: ${e.t}`);setTimeout(()=>{document.getElementById('tanbaFx').classList.remove('show');render();gameState.running=false;},1800)}
 async function switchWorld(msg,to){gameState.running=true;document.getElementById('overlayMsg').textContent='REVERSIBLE\n'+msg;document.getElementById('overlay').classList.add('show');beep(160,0.2);await new Promise(r=>setTimeout(r,800));document.getElementById('overlay').classList.remove('show');gameState.world=to;document.body.classList.toggle('afterlife',to!=='現世');gameState.position=0;render();appendLog(msg);gameState.running=false;}
+function judgeAfterlifeOnly(){const d=gameState.virtue-gameState.sin;const r=d>=20?'徳優勢':d<=-20?'罪優勢':'均衡';appendLog(`死後判定: 総徳${gameState.virtue}/総罪${gameState.sin} => ${r}（姿は維持）`);switchWorld('審判完了: 姿を変えず現世へ戻る','現世');showCard('審判結果',`${ranks[gameState.rank].i} ${ranks[gameState.rank].n} のまま現世へ戻った。`);render();}
 function reincarnate(force=false){const d=gameState.virtue-gameState.sin;let delta=0;if(d>=30)delta=1;else if(d>=10)delta=Math.random()<0.75?1:0;else if(gameState.sin>gameState.virtue)delta=Math.random()<0.35?-1:0;if(gameState.sin-gameState.virtue>=30)delta=-1;if(force&&Math.abs(delta)<1)delta=Math.random()<0.5?1:-1;gameState.rank=Math.max(0,Math.min(3,gameState.rank+delta));appendLog(`転生判定: 総徳${gameState.virtue}/総罪${gameState.sin} => ${delta>0?'ランクアップ':delta<0?'ランクダウン':'維持'}`);switchWorld('審判完了: 現世スタートへ再配置','現世');showCard('転生結果',`${ranks[gameState.rank].i} ${ranks[gameState.rank].n} に転生した。`);gameState.running=false;render();}
 function checkGoal(){if(gameState.rank===3){gameState.over=true;document.getElementById('clear').classList.add('show');appendLog('ゲームクリア！');saveRecord(true);}else showCard('GOAL','人間でないためゴール無効。さらに輪廻を続けよ。');}
 function saveRecord(cleared){const rec=JSON.parse(localStorage.getItem('tanbaRecord')||'{"best":null,"maxVirtue":0,"clear":0}');if(cleared){rec.clear++;rec.best=rec.best===null?gameState.turn:Math.min(rec.best,gameState.turn);}rec.maxVirtue=Math.max(rec.maxVirtue,gameState.virtue);localStorage.setItem('tanbaRecord',JSON.stringify(rec));}
