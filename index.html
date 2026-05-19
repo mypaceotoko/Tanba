@@ -77,8 +77,8 @@
 const ranks=[{n:'水に棲む生き物',i:'🐟'},{n:'両生類',i:'🐸'},{n:'哺乳類',i:'🐕'},{n:'人間',i:'🧍'}];
 const boardData={
   現世:["blank","tok","sin","fate","tok","death","dtok","sin","tanba","blank","dsin","tok","fate","sin","dtok","blank","death","tok","tanba","goal"],
-  死後:["blank","tok","sin","fate","tanba","sin","dtok","dsin","blank","dok","fate","sin","tanba","dtok","sin","blank","dsin","tok","fate","goal"],
-  深層死後:["sin","dsin","blank","fate","sin","tanba","tok","dsin","sin","goal"]
+  死後:["blank","tok","sin","fate","tanba","sin","dtok","dsin","blank","dok","fate","sin","tanba","dtok","sin","blank","dsin","tok","fate","blank","sin","tok","fate","dsin","tanba","blank","dtok","sin","fate","goal"],
+  深層死後:["sin","dsin","blank","fate","sin","tanba","tok","dsin","sin","blank","fate","sin","tok","dsin","tanba","sin","blank","goal"]
 };
 const afterlifeMsgs=[
   '死因の再現VTRが永遠ループ。罪 +9',
@@ -101,9 +101,9 @@ const tanbaEvents=[
 {t:"神託：次回は必ず6。",e:s=>s.forceSix=true},{t:"記憶が浄化された。",e:s=>{s.virtue=0;s.sin=0}},{t:"因果が増幅。",e:s=>{s.virtue*=2;s.sin*=2}},
 {t:"祝福で進化。",e:s=>s.rank=Math.min(3,s.rank+1)},{t:"試練で退化。",e:s=>s.rank=Math.max(0,s.rank-1)}
 ];
-const gameState={world:'現世',position:0,lap:0,turn:0,dice:0,virtue:0,sin:0,rank:0,forceSix:false,running:false,over:false,innerTrips:0};
+const gameState={world:'現世',position:0,lap:0,turn:0,dice:0,virtue:0,sin:0,rank:0,forceSix:false,running:false,over:false,innerTrips:0,afterlifeTurns:0};
 const boardEl=document.getElementById('board'),logEl=document.getElementById('log');
-function initGame(startWorld='現世'){Object.assign(gameState,{world:startWorld,position:0,lap:0,turn:0,dice:0,virtue:0,sin:0,rank:0,forceSix:false,running:false,over:false,innerTrips:0});document.body.classList.toggle('afterlife',startWorld!=='現世');logEl.textContent='';render();appendLog(startWorld==='現世'?'輪廻の旅が始まった。':'死後の世界から輪廻の旅が始まった。');}
+function initGame(startWorld='現世'){Object.assign(gameState,{world:startWorld,position:0,lap:0,turn:0,dice:0,virtue:0,sin:0,rank:0,forceSix:false,running:false,over:false,innerTrips:0,afterlifeTurns:0});document.body.classList.toggle('afterlife',startWorld!=='現世');logEl.textContent='';render();appendLog(startWorld==='現世'?'輪廻の旅が始まった。':'死後の世界から輪廻の旅が始まった。');}
 function buildBoard(){boardEl.querySelectorAll('.cell').forEach(e=>e.remove());const cells=boardData[gameState.world];const cx=205,cy=220;cells.forEach((t,i)=>{const d=document.createElement('div');d.className=`cell ${t}`;const ang=(Math.PI*2)*(i/cells.length)-Math.PI/2;const rad=60+i*6;d.style.left=(cx+Math.cos(ang)*rad-26)+'px';d.style.top=(cy+Math.sin(ang)*rad-20)+'px';d.innerHTML=`<div class=n>#${i}</div><div class=t>${label(t)}</div>`;if(i===gameState.position)d.innerHTML+=`<div class=player>${ranks[gameState.rank].i}</div>`;boardEl.appendChild(d);});}
 function label(t){return ({tok:'徳',dtok:'大徳',sin:'罪',dsin:'大罪',death:'死亡',tanba:'丹波',fate:'運命',dok:'どっくり',blank:'無',goal:'審判'})[t]||t}
 
@@ -113,7 +113,7 @@ function renderZoneTags(){const z=document.getElementById('zoneLayer');if(!z)ret
 ];
 if(gameState.world==='深層死後')tags.splice(0,3);
 for(const a of tags){const d=document.createElement('div');d.className='zoneTag';d.style.left=a.x+'px';d.style.top=a.y+'px';d.innerHTML=`${a.t}<small>${a.s}</small>`;z.appendChild(d);}}
-function render(){document.getElementById('stats').innerHTML=`<div>姿: <b>${ranks[gameState.rank].i} ${ranks[gameState.rank].n}</b></div><div>世界: <b>${gameState.world}</b></div><div>徳: <b>${gameState.virtue}</b></div><div>罪: <b>${gameState.sin}</b></div><div>ターン: <b>${gameState.turn}</b></div><div>出目: <b>${gameState.dice||'-'}</b></div><div>周回: <b>${gameState.lap}</b></div><div>どっくり: <b>${gameState.innerTrips}回</b></div><div>記録: <b>${JSON.parse(localStorage.getItem('tanbaRecord')||'{"best":null,"maxVirtue":0,"clear":0}').clear}回</b></div>`;document.getElementById('worldTitle').textContent=gameState.world+'ボード';buildBoard();renderZoneTags();}
+function render(){document.getElementById('stats').innerHTML=`<div>姿: <b>${ranks[gameState.rank].i} ${ranks[gameState.rank].n}</b></div><div>世界: <b>${gameState.world}</b></div><div>徳: <b>${gameState.virtue}</b></div><div>罪: <b>${gameState.sin}</b></div><div>ターン: <b>${gameState.turn}</b></div><div>出目: <b>${gameState.dice||'-'}</b></div><div>周回: <b>${gameState.lap}</b></div><div>どっくり: <b>${gameState.innerTrips}回</b></div><div>死後滞在: <b>${gameState.afterlifeTurns}T</b></div><div>記録: <b>${JSON.parse(localStorage.getItem('tanbaRecord')||'{"best":null,"maxVirtue":0,"clear":0}').clear}回</b></div>`;document.getElementById('worldTitle').textContent=gameState.world+'ボード';buildBoard();renderZoneTags();}
 function appendLog(t){logEl.textContent=`[${new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}] ${t}\n`+logEl.textContent;}
 function beep(f=440,d=0.08){try{const a=new(window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),g=a.createGain();o.type='square';o.frequency.value=f;o.connect(g);g.connect(a.destination);o.start();g.gain.setValueAtTime(0.07,a.currentTime);g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+d);o.stop(a.currentTime+d);}catch(e){}}
 const DICE_FACES=['⚀','⚁','⚂','⚃','⚄','⚅'];
@@ -122,18 +122,18 @@ async function movePlayer(step){for(let i=0;i<step;i++){await new Promise(res=>s
 function randomFrom(a){return a[Math.floor(Math.random()*a.length)]}
 function handleSquare(){const t=boardData[gameState.world][gameState.position];
 if(t==='goal'&&gameState.world==='現世'){checkGoal();if(gameState.over)return;}
-if(t==='goal'&&(gameState.world==='死後'||gameState.world==='深層死後')){showCard('運命の審判',`総徳 ${gameState.virtue} / 総罪 ${gameState.sin} を集計中…`);judgeAfterlifeOnly();return;}
+if(t==='goal'&&(gameState.world==='死後'||gameState.world==='深層死後')){if(gameState.afterlifeTurns<8){showCard('審判待機',`まだ審判は早い。死後をあと ${8-gameState.afterlifeTurns} ターン彷徨え。`);gameState.position=Math.max(0,gameState.position-2);render();gameState.running=false;return;}showCard('運命の審判',`総徳 ${gameState.virtue} / 総罪 ${gameState.sin} を集計中…`);judgeAfterlifeOnly();return;}
 if(t==='death'){switchWorld('死亡マス: 現世から死後へ','死後');return;}
 if(t==='dok'){gameState.innerTrips++;gameState.sin+=6;switchWorld('どっくり発動: 深層死後へ引きずり込まれた','深層死後');return;}
 
 const isAfterlife=gameState.world!=='現世';
 if(isAfterlife){
+  gameState.afterlifeTurns++;
   // 裏世界は徳罪カードを直接引かず、死後イベント中心で進行
   if(t==='tok'||t==='dtok'||t==='sin'||t==='dsin'||t==='blank'||t==='fate'||t==='tanba'){
-    const txt=randomFrom(afterlifeMsgs);
-    const gain=5+Math.floor(Math.random()*8);
-    if(txt.includes('徳'))gameState.virtue+=gain; else gameState.sin+=gain;
-    showCard('死後イベント',txt.replace(/([+][0-9]+)/,`+${gain}`));
+    const useDeck=Math.random()<0.45;
+    if(useDeck){const [txt,val,tp]=randomFrom(eventCards.after);const gain=val+Math.floor(Math.random()*5);if(tp==='tok')gameState.virtue+=gain;else gameState.sin+=gain;showCard('死後イベント',txt.replace(/([+][0-9]+)/,`+${gain}`));}
+    else{const txt=randomFrom(afterlifeMsgs);const gain=5+Math.floor(Math.random()*8);if(txt.includes('徳'))gameState.virtue+=gain; else gameState.sin+=gain;showCard('死後イベント',txt.replace(/([+][0-9]+)/,`+${gain}`));}
   }
   if(t==='fate'){gameState.sin+=2;appendLog('死後の運命: 因果が濃くなる（罪+2）');}
 }else{
