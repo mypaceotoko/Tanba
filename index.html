@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>輪廻転生リバーシブルゲーム たんば</title>
+  <style>
+    :root{--bg:#05040d;--panel:#0e0d19;--neon:#41f5ff;--txt:#f4f4f4;--good:#42ff87;--great:#ffd447;--sin:#ad56ff;--greatsin:#ff4545;--death:#1a0000;--tanba:#fff8c7;--fate:#45a6ff;--goal:#ffe600;}
+    *{box-sizing:border-box}
+    body{margin:0;background:radial-gradient(circle at 10% 5%,#17123a,#05040d 55%);color:var(--txt);font-family:monospace;line-height:1.35;overflow-x:hidden;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+    .app{max-width:430px;margin:0 auto;min-height:100vh;padding:10px 10px 16px;position:relative}
+    .panel{background:var(--panel);border:2px solid var(--neon);box-shadow:0 0 0 2px #00333a inset,0 0 14px #1fe8ff44;padding:10px;border-radius:8px}
+    h1{margin:0 0 8px;font-size:18px;color:#ffe4fb;text-shadow:0 0 6px #ff4cd6}
+    .stats{display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px}
+    .stats b{color:#7fffb3}
+    #board{position:relative;height:430px;margin:12px 0;border:2px solid #fff;border-radius:14px;overflow:hidden;background:
+      radial-gradient(circle at 20% 20%,#1a2a77 0,#120922 40%),
+      repeating-radial-gradient(circle at 60% 75%,#ffffff22 0 1px,#0000 1px 7px)}
+    .worldTitle{position:absolute;left:8px;top:8px;z-index:3;padding:2px 6px;border:1px solid #fff;background:#000a;font-size:11px}
+    .cell{position:absolute;width:52px;height:40px;border:2px solid #000;padding:2px;font-size:9px;font-weight:700;border-radius:8px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 0 0 1px #fff4 inset}
+    .cell .n{font-size:8px}.cell .t{font-size:10px}
+    .tok{background:var(--good);color:#03250f}.dtok{background:var(--great);color:#322400}.sin{background:var(--sin)}.dsin{background:var(--greatsin)}
+    .death{background:linear-gradient(135deg,#000,#700)}.tanba{background:var(--tanba);color:#3f2a00}.fate{background:var(--fate)}.blank{background:#ddd;color:#111}.goal{background:linear-gradient(135deg,#fff54d,#ff3f3f);color:#000}
+    .player{position:absolute;right:2px;bottom:0;font-size:16px;animation:hop .6s infinite alternate}
+    @keyframes hop{to{transform:translateY(-2px)}}
+    .actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+    button{font-size:16px;padding:12px 8px;border:none;border-radius:8px;font-weight:700}
+    #rollBtn{background:#ff4ce3;color:#fff}#restartBtn{background:#1ac0ff;color:#00162c}
+    #log{margin-top:10px;max-height:170px;overflow:auto;font-size:12px;white-space:pre-wrap}
+    .overlay,.card,.tanbaFx,.clear{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:16px;z-index:20}
+    .overlay.show,.card.show,.tanbaFx.show,.clear.show{display:flex}
+    .overlay{background:#000c;animation:invert .8s}
+    @keyframes invert{0%{filter:invert(0)}30%{filter:invert(1)}100%{filter:invert(0)}}
+    .msg{background:#111;border:2px solid #fff;padding:14px;border-radius:8px;text-align:center;font-size:20px;color:#fff}
+    .cardBox{width:100%;max-width:390px;background:#100e1c;border:2px solid #8de6ff;border-radius:8px;padding:14px;box-shadow:0 0 24px #59cfff77}
+    .cardBox h3{margin:0 0 8px;color:#ffe370}
+    .tanbaFx{background:radial-gradient(circle,#ffd86b55,#58006d88);animation:flash .4s 4}
+    @keyframes flash{50%{filter:hue-rotate(120deg) saturate(1.6)}}
+    .sil{width:120px;height:160px;background:#000;border-radius:60% 60% 40% 40%;position:relative;box-shadow:0 0 25px #ffe26e}
+    .sil:before{content:"";position:absolute;width:65px;height:65px;border-radius:50%;background:#000;top:-38px;left:28px}
+    .clear .msg{border-color:#ffe600;color:#ffe600;text-shadow:0 0 10px #ffe600}
+    #start{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#04030bcc;z-index:30}
+    .startBox{max-width:390px;padding:16px;background:#110f21;border:2px solid #8ef0ff;border-radius:10px}
+    .startBox p{font-size:13px}
+  </style>
+</head>
+<body>
+<div class="app" id="app">
+  <section class="panel">
+    <h1>輪廻転生リバーシブルゲーム たんば</h1>
+    <div class="stats" id="stats"></div>
+  </section>
+  <section id="board"><div class="worldTitle" id="worldTitle"></div></section>
+  <section class="panel">
+    <div class="actions"><button id="rollBtn">🎲 サイコロを振る</button><button id="restartBtn">⟲ リスタート</button></div>
+    <div id="log"></div>
+  </section>
+</div>
+<div id="start"><div class="startBox"><h2>START</h2><p>あなたは🐟として転生の輪へ。人間🧍でゴール到達を目指せ。</p><button id="startBtn" type="button">ゲーム開始</button></div></div>
+<div class="overlay" id="overlay"><div class="msg" id="overlayMsg"></div></div>
+<div class="card" id="card"><div class="cardBox"><h3 id="cardTitle"></h3><div id="cardText"></div><button id="cardClose" style="margin-top:10px">閉じる</button></div></div>
+<div class="tanbaFx" id="tanbaFx"><div style="text-align:center"><div class="sil"></div><div class="msg" id="tanbaMsg" style="margin-top:10px;font-size:16px"></div></div></div>
+<div class="clear" id="clear"><div class="msg">CONGRATULATION<br>あなたは人間界へ到達した</div></div>
+<script>
+const ranks=[{n:'水に棲む生き物',i:'🐟'},{n:'両生類',i:'🐸'},{n:'哺乳類',i:'🐕'},{n:'人間',i:'🧍'}];
+const boardData={
+  現世:["blank","tok","sin","fate","tok","death","dtok","sin","tanba","blank","dsin","tok","fate","sin","dtok","blank","death","tok","tanba","goal"],
+  死後:["blank","tok","sin","fate","tanba","sin","dtok","dsin","blank","tok","fate","sin","tanba","dtok","sin","blank","dsin","tok","fate","blank"]
+};
+const eventCards={
+  tok:[
+    ["毎日掃除機をかけた。徳 +10",10],
+    ["落ちていた財布を交番に届けた。徳 +15",15],
+    ["電車で席を譲ったら拍手が起きた。徳 +12",12],
+    ["朝ラジオ体操に魂を込めた。徳 +8",8],
+    ["誰も見ていない所でゴミを拾った。徳 +10",10],
+    ["怒りを飲み込み水を飲んだ。徳 +6",6]
+  ],
+  sin:[
+    ["口が臭いのにいつも口を開けている。罪 +10",10],
+    ["読んでない本を読んだ顔で語った。罪 +8",8],
+    ["会釈の配分を間違えた。罪 +6",6],
+    ["ありがとうの代わりに咳をした。罪 +5",5]
+  ],
+  after:[
+    ["三途の川で順番待ち。徳 +5",5,"tok"],
+    ["霊界受付で書類不備。罪 +8",8,"sin"],
+    ["地獄一丁目で迷子。罪 +10",10,"sin"],
+    ["天界の村でお茶。徳 +10",10,"tok"],
+    ["霊界TVで現世ダイジェスト。罪 +5",5,"sin"]
+  ]
+};
+const tanbaEvents=[
+{t:"来世を信じるも信じないも、あなた次第だ。",e:s=>{[s.virtue,s.sin]=[s.sin,s.virtue]}},
+{t:"心の準備はいいですか？",e:s=>s.virtue+=30},{t:"生きるとは、サイコロを振ること。",e:s=>s.sin+=30},
+{t:"徳も罪も裏返し。",e:s=>switchWorld('強制移動: 死後へ', '死後')},{t:"あなたの来世、少し見えました。",e:s=>reincarnate(true)},
+{t:"神託：次回は必ず6。",e:s=>s.forceSix=true},{t:"記憶が浄化された。",e:s=>{s.virtue=0;s.sin=0}},{t:"因果が増幅。",e:s=>{s.virtue*=2;s.sin*=2}},
+{t:"祝福で進化。",e:s=>s.rank=Math.min(3,s.rank+1)},{t:"試練で退化。",e:s=>s.rank=Math.max(0,s.rank-1)}
+];
+const gameState={world:'現世',position:0,lap:0,turn:0,dice:0,virtue:0,sin:0,rank:0,forceSix:false,running:false,over:false};
+const boardEl=document.getElementById('board'),logEl=document.getElementById('log');
+function initGame(){Object.assign(gameState,{world:'現世',position:0,lap:0,turn:0,dice:0,virtue:0,sin:0,rank:0,forceSix:false,running:false,over:false});logEl.textContent='';render();appendLog('輪廻の旅が始まった。');}
+function buildBoard(){boardEl.querySelectorAll('.cell').forEach(e=>e.remove());const cells=boardData[gameState.world];const cx=205,cy=220;cells.forEach((t,i)=>{const d=document.createElement('div');d.className=`cell ${t}`;const ang=(Math.PI*2)*(i/cells.length)-Math.PI/2;const rad=60+i*6;d.style.left=(cx+Math.cos(ang)*rad-26)+'px';d.style.top=(cy+Math.sin(ang)*rad-20)+'px';d.innerHTML=`<div class=n>#${i}</div><div class=t>${label(t)}</div>`;if(i===gameState.position)d.innerHTML+=`<div class=player>${ranks[gameState.rank].i}</div>`;boardEl.appendChild(d);});}
+function label(t){return ({tok:'徳',dtok:'大徳',sin:'罪',dsin:'大罪',death:'死亡',tanba:'丹波',fate:'運命',blank:'無',goal:'GOAL'})[t]||t}
+function render(){document.getElementById('stats').innerHTML=`<div>姿: <b>${ranks[gameState.rank].i} ${ranks[gameState.rank].n}</b></div><div>世界: <b>${gameState.world}</b></div><div>徳: <b>${gameState.virtue}</b></div><div>罪: <b>${gameState.sin}</b></div><div>ターン: <b>${gameState.turn}</b></div><div>出目: <b>${gameState.dice||'-'}</b></div><div>周回: <b>${gameState.lap}</b></div><div>記録: <b>${JSON.parse(localStorage.getItem('tanbaRecord')||'{"best":null,"maxVirtue":0,"clear":0}').clear}回</b></div>`;document.getElementById('worldTitle').textContent=gameState.world+'ボード';buildBoard();}
+function appendLog(t){logEl.textContent=`[${new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}] ${t}\n`+logEl.textContent;}
+function beep(f=440,d=0.08){try{const a=new(window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),g=a.createGain();o.type='square';o.frequency.value=f;o.connect(g);g.connect(a.destination);o.start();g.gain.setValueAtTime(0.07,a.currentTime);g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+d);o.stop(a.currentTime+d);}catch(e){}}
+async function rollDice(){if(gameState.running||gameState.over)return;gameState.running=true;gameState.turn++;let r=1,c=0;const iv=setInterval(()=>{r=1+Math.floor(Math.random()*6);gameState.dice=r;render();beep(240+r*40,0.03);if(++c>12){clearInterval(iv);const final=gameState.forceSix?6:r;gameState.forceSix=false;gameState.dice=final;render();appendLog(`サイコロ: ${final}`);movePlayer(final);}},50);}
+async function movePlayer(step){for(let i=0;i<step;i++){await new Promise(res=>setTimeout(res,180));gameState.position++;if(gameState.position>=boardData[gameState.world].length){gameState.position=0;gameState.lap++;appendLog(`${gameState.world}を1周。`);if(gameState.world==='現世'){await switchWorld('現世から死後へ','死後');break;}else{reincarnate();return;}}render();beep(520,0.04);}handleSquare();}
+function randomFrom(a){return a[Math.floor(Math.random()*a.length)]}
+function handleSquare(){const t=boardData[gameState.world][gameState.position];if(t==='goal'&&gameState.world==='現世'){checkGoal();if(gameState.over)return;} if(t==='tok'||t==='dtok'){const [txt,val]=randomFrom(eventCards.tok);gameState.virtue+=val+(t==='dtok'?8:0);showCard('徳カード',txt+(t==='dtok'?' 大徳ボーナス+8':''));}
+else if(t==='sin'||t==='dsin'){const [txt,val]=randomFrom(eventCards.sin);gameState.sin+=val+(t==='dsin'?10:0);showCard('罪カード',txt+(t==='dsin'?' 大罪ボーナス+10':''));}
+else if(t==='death'){switchWorld('死亡マス: 現世から死後へ','死後');}
+else if(t==='fate'){gameState.virtue+=Math.floor(Math.random()*7)-3;gameState.sin+=Math.floor(Math.random()*7)-3;showCard('運命カード','徳と罪が揺らいだ。');}
+else if(t==='tanba'||Math.random()<0.12){showTanbaEvent();}
+if(gameState.world==='死後' && ['blank','fate'].includes(t)){const [txt,val,tp]=randomFrom(eventCards.after);if(tp==='tok')gameState.virtue+=val; else gameState.sin+=val;showCard('死後イベント',txt);}gameState.virtue=Math.max(0,gameState.virtue);gameState.sin=Math.max(0,gameState.sin);render();gameState.running=false;}
+function showCard(title,text){document.getElementById('cardTitle').textContent=title;document.getElementById('cardText').textContent=text;document.getElementById('card').classList.add('show');appendLog(`${title}: ${text}`);beep(700,0.06)}
+function showTanbaEvent(){const e=randomFrom(tanbaEvents);document.getElementById('tanbaMsg').textContent=e.t;document.getElementById('tanbaFx').classList.add('show');e.e(gameState);appendLog(`丹波イベント: ${e.t}`);setTimeout(()=>{document.getElementById('tanbaFx').classList.remove('show');render();gameState.running=false;},1800)}
+async function switchWorld(msg,to){gameState.running=true;document.getElementById('overlayMsg').textContent='REVERSIBLE\n'+msg;document.getElementById('overlay').classList.add('show');beep(160,0.2);await new Promise(r=>setTimeout(r,800));document.getElementById('overlay').classList.remove('show');gameState.world=to;gameState.position=0;render();appendLog(msg);gameState.running=false;}
+function reincarnate(force=false){const d=gameState.virtue-gameState.sin;let delta=0;if(d>=30)delta=1;else if(d>=10)delta=Math.random()<0.75?1:0;else if(gameState.sin>gameState.virtue)delta=Math.random()<0.35?-1:0;if(gameState.sin-gameState.virtue>=30)delta=-1;if(force&&Math.abs(delta)<1)delta=Math.random()<0.5?1:-1;gameState.rank=Math.max(0,Math.min(3,gameState.rank+delta));appendLog(`転生判定: 徳${gameState.virtue}/罪${gameState.sin} => ${delta>0?'ランクアップ':delta<0?'ランクダウン':'維持'}`);switchWorld('死後から現世へ','現世');showCard('転生結果',`${ranks[gameState.rank].i} ${ranks[gameState.rank].n} に転生した。`);gameState.running=false;render();}
+function checkGoal(){if(gameState.rank===3){gameState.over=true;document.getElementById('clear').classList.add('show');appendLog('ゲームクリア！');saveRecord(true);}else showCard('GOAL','人間でないためゴール無効。さらに輪廻を続けよ。');}
+function saveRecord(cleared){const rec=JSON.parse(localStorage.getItem('tanbaRecord')||'{"best":null,"maxVirtue":0,"clear":0}');if(cleared){rec.clear++;rec.best=rec.best===null?gameState.turn:Math.min(rec.best,gameState.turn);}rec.maxVirtue=Math.max(rec.maxVirtue,gameState.virtue);localStorage.setItem('tanbaRecord',JSON.stringify(rec));}
+function restartGame(){saveRecord(false);document.getElementById('clear').classList.remove('show');initGame();}
+document.getElementById('rollBtn').onclick=rollDice;document.getElementById('restartBtn').onclick=restartGame;document.getElementById('cardClose').onclick=()=>document.getElementById('card').classList.remove('show');
+function startGameFromOverlay(){const s=document.getElementById('start');if(!s||s.style.display==='none')return;s.style.display='none';initGame();}
+window.__startGame=startGameFromOverlay;
+document.getElementById('startBtn').addEventListener('click',startGameFromOverlay,{passive:true});
+document.getElementById('startBtn').addEventListener('touchend',(e)=>{e.preventDefault();startGameFromOverlay();},{passive:false});
+document.getElementById('start').addEventListener('click',(e)=>{if(e.target.id==='start')startGameFromOverlay();},{passive:true});
+</script>
+</body>
+</html>
