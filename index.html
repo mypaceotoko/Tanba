@@ -63,7 +63,7 @@
     <div id="log"></div>
   </section>
 </div>
-<div id="start"><div class="startBox"><h2>START</h2><p>あなたは🐟として転生の輪へ。人間🧍でゴール到達を目指せ。</p><button id="startBtn">ゲーム開始</button></div></div>
+<div id="start"><div class="startBox"><h2>START</h2><p>あなたは🐟として転生の輪へ。人間🧍でゴール到達を目指せ。</p><div class="actions"><button id="startBtn">現世から開始</button><button id="startAfterBtn">死後から開始</button></div><p style="font-size:12px;opacity:.85">※死後スタート時の徳/罪は0から始まります。</p></div></div>
 <div class="overlay" id="overlay"><div class="msg" id="overlayMsg"></div></div>
 <div class="card" id="card"><div class="cardBox"><h3 id="cardTitle"></h3><div id="cardText"></div><button id="cardClose" style="margin-top:10px">閉じる</button></div></div>
 <div class="tanbaFx" id="tanbaFx"><div style="text-align:center"><div class="sil"></div><div class="msg" id="tanbaMsg" style="margin-top:10px;font-size:16px"></div></div></div>
@@ -91,7 +91,7 @@ const tanbaEvents=[
 ];
 const gameState={world:'現世',position:0,lap:0,turn:0,dice:0,virtue:0,sin:0,rank:0,forceSix:false,running:false,over:false,innerTrips:0};
 const boardEl=document.getElementById('board'),logEl=document.getElementById('log');
-function initGame(){Object.assign(gameState,{world:'現世',position:0,lap:0,turn:0,dice:0,virtue:0,sin:0,rank:0,forceSix:false,running:false,over:false,innerTrips:0});logEl.textContent='';render();appendLog('輪廻の旅が始まった。');}
+function initGame(startWorld='現世'){Object.assign(gameState,{world:startWorld,position:0,lap:0,turn:0,dice:0,virtue:0,sin:0,rank:0,forceSix:false,running:false,over:false,innerTrips:0});document.body.classList.toggle('afterlife',startWorld!=='現世');logEl.textContent='';render();appendLog(startWorld==='現世'?'輪廻の旅が始まった。':'死後の世界から輪廻の旅が始まった。');}
 function buildBoard(){boardEl.querySelectorAll('.cell').forEach(e=>e.remove());const cells=boardData[gameState.world];const cx=205,cy=220;cells.forEach((t,i)=>{const d=document.createElement('div');d.className=`cell ${t}`;const ang=(Math.PI*2)*(i/cells.length)-Math.PI/2;const rad=60+i*6;d.style.left=(cx+Math.cos(ang)*rad-26)+'px';d.style.top=(cy+Math.sin(ang)*rad-20)+'px';d.innerHTML=`<div class=n>#${i}</div><div class=t>${label(t)}</div>`;if(i===gameState.position)d.innerHTML+=`<div class=player>${ranks[gameState.rank].i}</div>`;boardEl.appendChild(d);});}
 function label(t){return ({tok:'徳',dtok:'大徳',sin:'罪',dsin:'大罪',death:'死亡',tanba:'丹波',fate:'運命',dok:'どっくり',blank:'無',goal:'審判'})[t]||t}
 function render(){document.getElementById('stats').innerHTML=`<div>姿: <b>${ranks[gameState.rank].i} ${ranks[gameState.rank].n}</b></div><div>世界: <b>${gameState.world}</b></div><div>徳: <b>${gameState.virtue}</b></div><div>罪: <b>${gameState.sin}</b></div><div>ターン: <b>${gameState.turn}</b></div><div>出目: <b>${gameState.dice||'-'}</b></div><div>周回: <b>${gameState.lap}</b></div><div>どっくり: <b>${gameState.innerTrips}回</b></div><div>記録: <b>${JSON.parse(localStorage.getItem('tanbaRecord')||'{"best":null,"maxVirtue":0,"clear":0}').clear}回</b></div>`;document.getElementById('worldTitle').textContent=gameState.world+'ボード';buildBoard();}
@@ -116,7 +116,8 @@ function checkGoal(){if(gameState.rank===3){gameState.over=true;document.getElem
 function saveRecord(cleared){const rec=JSON.parse(localStorage.getItem('tanbaRecord')||'{"best":null,"maxVirtue":0,"clear":0}');if(cleared){rec.clear++;rec.best=rec.best===null?gameState.turn:Math.min(rec.best,gameState.turn);}rec.maxVirtue=Math.max(rec.maxVirtue,gameState.virtue);localStorage.setItem('tanbaRecord',JSON.stringify(rec));}
 function restartGame(){saveRecord(false);document.getElementById('clear').classList.remove('show');initGame();}
 document.getElementById('rollBtn').onclick=rollDice;document.getElementById('restartBtn').onclick=restartGame;document.getElementById('cardClose').onclick=()=>document.getElementById('card').classList.remove('show');
-document.getElementById('startBtn').onclick=()=>{document.getElementById('start').style.display='none';initGame();};
+document.getElementById('startBtn').onclick=()=>{document.getElementById('start').style.display='none';initGame('現世');};
+document.getElementById('startAfterBtn').onclick=()=>{document.getElementById('start').style.display='none';initGame('死後');};
 </script>
 </body>
 </html>
