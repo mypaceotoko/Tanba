@@ -44,12 +44,12 @@
     .sil{width:120px;height:160px;background:#000;border-radius:60% 60% 40% 40%;position:relative;box-shadow:0 0 25px #ffe26e}
     .sil:before{content:"";position:absolute;width:65px;height:65px;border-radius:50%;background:#000;top:-38px;left:28px}
     .clear .msg{border-color:#ffe600;color:#ffe600;text-shadow:0 0 10px #ffe600}
-    #diceOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:#000b;z-index:25}
+    #diceOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:radial-gradient(circle,#3d144b88,#000c 60%);z-index:25;backdrop-filter:blur(2px)}
     #diceOverlay.show{display:flex}
-    .diceFace{width:130px;height:130px;background:#fff;border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:88px;line-height:1;box-shadow:0 0 50px #ff4ce3,0 0 20px #fff4;animation:diceShake .08s infinite}
-    @keyframes diceShake{0%{transform:rotate(-12deg) scale(1.06)}50%{transform:rotate(12deg) scale(0.94)}100%{transform:rotate(-12deg) scale(1.06)}}
-    .diceFace.land{animation:diceLand .35s cubic-bezier(.2,1.6,.4,1) forwards}
-    @keyframes diceLand{0%{transform:scale(1.4) rotate(8deg)}70%{transform:scale(0.88) rotate(-3deg)}100%{transform:scale(1) rotate(0deg)}}
+    .diceFace{width:140px;height:140px;background:radial-gradient(circle at 30% 25%,#fff,#dbe7ff 58%,#b5c2e6);border:4px solid #fff;border-radius:28px;display:flex;align-items:center;justify-content:center;font-size:92px;line-height:1;box-shadow:0 0 80px #ff4ce3,0 0 24px #fff7,inset 0 -8px 18px #6f7db744;animation:diceShake .08s infinite;position:relative;overflow:hidden}
+    @keyframes diceShake{0%{transform:rotate(-14deg) scale(1.08)}50%{transform:rotate(14deg) scale(0.9)}100%{transform:rotate(-14deg) scale(1.08)}}
+    .diceFace.land{animation:diceLand .45s cubic-bezier(.18,1.5,.35,1) forwards}
+    @keyframes diceLand{0%{transform:scale(1.55) rotate(14deg)}60%{transform:scale(0.82) rotate(-8deg)}82%{transform:scale(1.06) rotate(3deg)}100%{transform:scale(1) rotate(0deg)}}
     #start{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#04030bcc;z-index:30}
     .startBox{max-width:390px;padding:16px;background:#110f21;border:2px solid #8ef0ff;border-radius:10px}
     .startBox p{font-size:13px}
@@ -72,7 +72,7 @@
 <div class="card" id="card"><div class="cardBox"><h3 id="cardTitle"></h3><div id="cardText"></div><button id="cardClose" style="margin-top:10px">閉じる</button></div></div>
 <div class="tanbaFx" id="tanbaFx"><div style="text-align:center"><div class="sil"></div><div class="msg" id="tanbaMsg" style="margin-top:10px;font-size:16px"></div></div></div>
 <div class="clear" id="clear"><div class="msg">CONGRATULATION<br>あなたは人間界へ到達した</div></div>
-<div id="diceOverlay"><div class="diceFace" id="diceFace">🎲</div></div>
+<div id="diceOverlay"><div class="diceFace" id="diceFace">🎲</div><div id="diceTrail" style="position:fixed;bottom:16%;font-size:22px;letter-spacing:6px;color:#ffd9ff;opacity:.9;display:none;text-shadow:0 0 8px #ff4ce3">✦ ✦ ✦ ROLLING ✦ ✦ ✦</div></div>
 <script>
 const ranks=[{n:'水に棲む生き物',i:'🐟'},{n:'両生類',i:'🐸'},{n:'哺乳類',i:'🐕'},{n:'人間',i:'🧍'}];
 const boardData={
@@ -117,7 +117,7 @@ function render(){document.getElementById('stats').innerHTML=`<div>姿: <b>${ran
 function appendLog(t){logEl.textContent=`[${new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}] ${t}\n`+logEl.textContent;}
 function beep(f=440,d=0.08){try{const a=new(window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),g=a.createGain();o.type='square';o.frequency.value=f;o.connect(g);g.connect(a.destination);o.start();g.gain.setValueAtTime(0.07,a.currentTime);g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+d);o.stop(a.currentTime+d);}catch(e){}}
 const DICE_FACES=['⚀','⚁','⚂','⚃','⚄','⚅'];
-async function rollDice(){if(gameState.running||gameState.over)return;gameState.running=true;gameState.turn++;const diceEl=document.getElementById('diceFace'),diceOv=document.getElementById('diceOverlay');diceEl.classList.remove('land');diceEl.textContent='🎲';diceOv.classList.add('show');let r=1,c=0;const iv=setInterval(()=>{r=1+Math.floor(Math.random()*6);gameState.dice=r;diceEl.textContent=DICE_FACES[r-1];render();beep(240+r*40,0.03);if(++c>12){clearInterval(iv);const final=gameState.forceSix?6:r;gameState.forceSix=false;gameState.dice=final;diceEl.textContent=DICE_FACES[final-1];diceEl.classList.add('land');render();appendLog(`サイコロ: ${final}`);setTimeout(()=>{diceOv.classList.remove('show');movePlayer(final);},650);}},50);}
+async function rollDice(){if(gameState.running||gameState.over)return;gameState.running=true;gameState.turn++;const diceEl=document.getElementById('diceFace'),diceOv=document.getElementById('diceOverlay'),trail=document.getElementById('diceTrail');diceEl.classList.remove('land');diceEl.textContent='🎲';if(trail)trail.style.display='block';diceOv.classList.add('show');let r=1,c=0;const iv=setInterval(()=>{r=1+Math.floor(Math.random()*6);gameState.dice=r;diceEl.textContent=DICE_FACES[r-1];render();beep(220+r*55,0.03);if(++c>14){clearInterval(iv);const final=gameState.forceSix?6:r;gameState.forceSix=false;gameState.dice=final;diceEl.textContent=DICE_FACES[final-1];diceEl.classList.add('land');render();appendLog(`サイコロ: ${final}`);setTimeout(()=>{if(trail)trail.style.display='none';diceOv.classList.remove('show');movePlayer(final);},760);}},45);}
 async function movePlayer(step){for(let i=0;i<step;i++){await new Promise(res=>setTimeout(res,180));gameState.position++;if(gameState.position>=boardData[gameState.world].length){gameState.position=0;gameState.lap++;appendLog(`${gameState.world}を1周。`);if(gameState.world==='現世'){await switchWorld('現世から死後へ（徳と罪を持ち越し）','死後');break;}else{reincarnate();return;}}render();beep(520,0.04);}handleSquare();}
 function randomFrom(a){return a[Math.floor(Math.random()*a.length)]}
 function handleSquare(){const t=boardData[gameState.world][gameState.position];
