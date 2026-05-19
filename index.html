@@ -39,6 +39,12 @@
     .sil{width:120px;height:160px;background:#000;border-radius:60% 60% 40% 40%;position:relative;box-shadow:0 0 25px #ffe26e}
     .sil:before{content:"";position:absolute;width:65px;height:65px;border-radius:50%;background:#000;top:-38px;left:28px}
     .clear .msg{border-color:#ffe600;color:#ffe600;text-shadow:0 0 10px #ffe600}
+    #diceOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:#000b;z-index:25}
+    #diceOverlay.show{display:flex}
+    .diceFace{width:130px;height:130px;background:#fff;border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:88px;line-height:1;box-shadow:0 0 50px #ff4ce3,0 0 20px #fff4;animation:diceShake .08s infinite}
+    @keyframes diceShake{0%{transform:rotate(-12deg) scale(1.06)}50%{transform:rotate(12deg) scale(0.94)}100%{transform:rotate(-12deg) scale(1.06)}}
+    .diceFace.land{animation:diceLand .35s cubic-bezier(.2,1.6,.4,1) forwards}
+    @keyframes diceLand{0%{transform:scale(1.4) rotate(8deg)}70%{transform:scale(0.88) rotate(-3deg)}100%{transform:scale(1) rotate(0deg)}}
     #start{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#04030bcc;z-index:30}
     .startBox{max-width:390px;padding:16px;background:#110f21;border:2px solid #8ef0ff;border-radius:10px}
     .startBox p{font-size:13px}
@@ -61,6 +67,7 @@
 <div class="card" id="card"><div class="cardBox"><h3 id="cardTitle"></h3><div id="cardText"></div><button id="cardClose" style="margin-top:10px">閉じる</button></div></div>
 <div class="tanbaFx" id="tanbaFx"><div style="text-align:center"><div class="sil"></div><div class="msg" id="tanbaMsg" style="margin-top:10px;font-size:16px"></div></div></div>
 <div class="clear" id="clear"><div class="msg">CONGRATULATION<br>あなたは人間界へ到達した</div></div>
+<div id="diceOverlay"><div class="diceFace" id="diceFace">🎲</div></div>
 <script>
 const ranks=[{n:'水に棲む生き物',i:'🐟'},{n:'両生類',i:'🐸'},{n:'哺乳類',i:'🐕'},{n:'人間',i:'🧍'}];
 const boardData={
@@ -87,7 +94,8 @@ function label(t){return ({tok:'徳',dtok:'大徳',sin:'罪',dsin:'大罪',death
 function render(){document.getElementById('stats').innerHTML=`<div>姿: <b>${ranks[gameState.rank].i} ${ranks[gameState.rank].n}</b></div><div>世界: <b>${gameState.world}</b></div><div>徳: <b>${gameState.virtue}</b></div><div>罪: <b>${gameState.sin}</b></div><div>ターン: <b>${gameState.turn}</b></div><div>出目: <b>${gameState.dice||'-'}</b></div><div>周回: <b>${gameState.lap}</b></div><div>記録: <b>${JSON.parse(localStorage.getItem('tanbaRecord')||'{"best":null,"maxVirtue":0,"clear":0}').clear}回</b></div>`;document.getElementById('worldTitle').textContent=gameState.world+'ボード';buildBoard();}
 function appendLog(t){logEl.textContent=`[${new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}] ${t}\n`+logEl.textContent;}
 function beep(f=440,d=0.08){try{const a=new(window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),g=a.createGain();o.type='square';o.frequency.value=f;o.connect(g);g.connect(a.destination);o.start();g.gain.setValueAtTime(0.07,a.currentTime);g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+d);o.stop(a.currentTime+d);}catch(e){}}
-async function rollDice(){if(gameState.running||gameState.over)return;gameState.running=true;gameState.turn++;let r=1,c=0;const iv=setInterval(()=>{r=1+Math.floor(Math.random()*6);gameState.dice=r;render();beep(240+r*40,0.03);if(++c>12){clearInterval(iv);const final=gameState.forceSix?6:r;gameState.forceSix=false;gameState.dice=final;render();appendLog(`サイコロ: ${final}`);movePlayer(final);}},50);}
+const DICE_FACES=['⚀','⚁','⚂','⚃','⚄','⚅'];
+async function rollDice(){if(gameState.running||gameState.over)return;gameState.running=true;gameState.turn++;const diceEl=document.getElementById('diceFace'),diceOv=document.getElementById('diceOverlay');diceEl.classList.remove('land');diceEl.textContent='🎲';diceOv.classList.add('show');let r=1,c=0;const iv=setInterval(()=>{r=1+Math.floor(Math.random()*6);gameState.dice=r;diceEl.textContent=DICE_FACES[r-1];render();beep(240+r*40,0.03);if(++c>12){clearInterval(iv);const final=gameState.forceSix?6:r;gameState.forceSix=false;gameState.dice=final;diceEl.textContent=DICE_FACES[final-1];diceEl.classList.add('land');render();appendLog(`サイコロ: ${final}`);setTimeout(()=>{diceOv.classList.remove('show');movePlayer(final);},650);}},50);}
 async function movePlayer(step){for(let i=0;i<step;i++){await new Promise(res=>setTimeout(res,180));gameState.position++;if(gameState.position>=boardData[gameState.world].length){gameState.position=0;gameState.lap++;appendLog(`${gameState.world}を1周。`);if(gameState.world==='現世'){await switchWorld('現世から死後へ','死後');break;}else{reincarnate();return;}}render();beep(520,0.04);}handleSquare();}
 function randomFrom(a){return a[Math.floor(Math.random()*a.length)]}
 function handleSquare(){const t=boardData[gameState.world][gameState.position];if(t==='goal'&&gameState.world==='現世'){checkGoal();if(gameState.over)return;} if(t==='tok'||t==='dtok'){const [txt,val]=randomFrom(eventCards.tok);gameState.virtue+=val+(t==='dtok'?8:0);showCard('徳カード',txt+(t==='dtok'?' 大徳ボーナス+8':''));}
