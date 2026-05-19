@@ -39,7 +39,7 @@
     .sil{width:120px;height:160px;background:#000;border-radius:60% 60% 40% 40%;position:relative;box-shadow:0 0 25px #ffe26e}
     .sil:before{content:"";position:absolute;width:65px;height:65px;border-radius:50%;background:#000;top:-38px;left:28px}
     .clear .msg{border-color:#ffe600;color:#ffe600;text-shadow:0 0 10px #ffe600}
-    #start{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#04030bcc;z-index:30}
+    #start{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#04030bcc;z-index:30;pointer-events:auto}
     .startBox{max-width:390px;padding:16px;background:#110f21;border:2px solid #8ef0ff;border-radius:10px}
     .startBox p{font-size:13px}
   </style>
@@ -125,8 +125,9 @@ document.getElementById('rollBtn').onclick=rollDice;document.getElementById('res
 function startGameFromOverlay(){const s=document.getElementById('start');if(!s||s.style.display==='none')return;s.style.display='none';initGame();}
 window.__startGame=startGameFromOverlay;
 document.getElementById('startBtn').addEventListener('click',startGameFromOverlay,{passive:true});
+document.getElementById('startBtn').addEventListener('touchstart',(e)=>{e.preventDefault();startGameFromOverlay();},{passive:false});
 document.getElementById('startBtn').addEventListener('touchend',(e)=>{e.preventDefault();startGameFromOverlay();},{passive:false});
-document.getElementById('start').addEventListener('click',(e)=>{if(e.target.id==='start')startGameFromOverlay();},{passive:true});
+document.getElementById('start').addEventListener('pointerup',startGameFromOverlay,{passive:true});
 </script>
 </body>
 </html>
