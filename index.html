@@ -17,7 +17,11 @@
     #board{position:relative;height:430px;margin:12px 0;border:2px solid #fff;border-radius:14px;overflow:hidden;background:
       radial-gradient(circle at 20% 20%,#1a2a77 0,#120922 40%),
       repeating-radial-gradient(circle at 60% 75%,#ffffff22 0 1px,#0000 1px 7px)}
-    .worldTitle{position:absolute;left:8px;top:8px;z-index:3;padding:2px 6px;border:1px solid #fff;background:#000a;font-size:11px}
+    body.afterlife #board{background:linear-gradient(180deg,#f2e59f 0 30%,#f4a0c5 30% 58%,#9e2a2a 58% 82%,#4a103a 82% 100%);}
+    body.afterlife #board:before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(165deg,#ffffff18 0 24px,#0000 24px 44px);pointer-events:none}
+    .worldTitle{position:absolute;left:8px;top:8px;z-index:3;padding:2px 8px;border:1px solid #fff;background:#000a;font-size:11px;border-radius:6px}
+    .zoneTag{position:absolute;z-index:2;background:#ffef67;color:#221500;border:2px solid #2a1200;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:700;box-shadow:0 2px 0 #0006}
+    .zoneTag small{display:block;font-size:10px;font-weight:600}
     .cell{position:absolute;width:52px;height:40px;border:2px solid #000;padding:2px;font-size:9px;font-weight:700;border-radius:8px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 0 0 1px #fff4 inset}
     .cell .n{font-size:8px}.cell .t{font-size:10px}
     .tok{background:var(--good);color:#03250f}.dtok{background:var(--great);color:#322400}.sin{background:var(--sin)}.dsin{background:var(--greatsin)}
@@ -57,7 +61,7 @@
     <h1>輪廻転生リバーシブルゲーム たんば</h1>
     <div class="stats" id="stats"></div>
   </section>
-  <section id="board"><div class="worldTitle" id="worldTitle"></div></section>
+  <section id="board"><div class="worldTitle" id="worldTitle"></div><div id="zoneLayer"></div></section>
   <section class="panel">
     <div class="actions"><button id="rollBtn">🎲 サイコロを振る</button><button id="restartBtn">⟲ リスタート</button></div>
     <div id="log"></div>
@@ -102,7 +106,14 @@ const boardEl=document.getElementById('board'),logEl=document.getElementById('lo
 function initGame(startWorld='現世'){Object.assign(gameState,{world:startWorld,position:0,lap:0,turn:0,dice:0,virtue:0,sin:0,rank:0,forceSix:false,running:false,over:false,innerTrips:0});document.body.classList.toggle('afterlife',startWorld!=='現世');logEl.textContent='';render();appendLog(startWorld==='現世'?'輪廻の旅が始まった。':'死後の世界から輪廻の旅が始まった。');}
 function buildBoard(){boardEl.querySelectorAll('.cell').forEach(e=>e.remove());const cells=boardData[gameState.world];const cx=205,cy=220;cells.forEach((t,i)=>{const d=document.createElement('div');d.className=`cell ${t}`;const ang=(Math.PI*2)*(i/cells.length)-Math.PI/2;const rad=60+i*6;d.style.left=(cx+Math.cos(ang)*rad-26)+'px';d.style.top=(cy+Math.sin(ang)*rad-20)+'px';d.innerHTML=`<div class=n>#${i}</div><div class=t>${label(t)}</div>`;if(i===gameState.position)d.innerHTML+=`<div class=player>${ranks[gameState.rank].i}</div>`;boardEl.appendChild(d);});}
 function label(t){return ({tok:'徳',dtok:'大徳',sin:'罪',dsin:'大罪',death:'死亡',tanba:'丹波',fate:'運命',dok:'どっくり',blank:'無',goal:'審判'})[t]||t}
-function render(){document.getElementById('stats').innerHTML=`<div>姿: <b>${ranks[gameState.rank].i} ${ranks[gameState.rank].n}</b></div><div>世界: <b>${gameState.world}</b></div><div>徳: <b>${gameState.virtue}</b></div><div>罪: <b>${gameState.sin}</b></div><div>ターン: <b>${gameState.turn}</b></div><div>出目: <b>${gameState.dice||'-'}</b></div><div>周回: <b>${gameState.lap}</b></div><div>どっくり: <b>${gameState.innerTrips}回</b></div><div>記録: <b>${JSON.parse(localStorage.getItem('tanbaRecord')||'{"best":null,"maxVirtue":0,"clear":0}').clear}回</b></div>`;document.getElementById('worldTitle').textContent=gameState.world+'ボード';buildBoard();}
+
+function renderZoneTags(){const z=document.getElementById('zoneLayer');if(!z)return;z.innerHTML='';if(gameState.world==='現世')return;const tags=[
+{t:'天上界',s:'止まれ +37',x:320,y:42},{t:'天界',s:'止まれ +36',x:28,y:98},{t:'霊界',s:'止まれ +23',x:312,y:182},
+{t:'三途の川',s:'止まれ +10',x:18,y:256},{t:'精霊界',s:'止まれ ±0',x:170,y:322},{t:'幽界',s:'止まれ -6',x:302,y:352}
+];
+if(gameState.world==='深層死後')tags.splice(0,3);
+for(const a of tags){const d=document.createElement('div');d.className='zoneTag';d.style.left=a.x+'px';d.style.top=a.y+'px';d.innerHTML=`${a.t}<small>${a.s}</small>`;z.appendChild(d);}}
+function render(){document.getElementById('stats').innerHTML=`<div>姿: <b>${ranks[gameState.rank].i} ${ranks[gameState.rank].n}</b></div><div>世界: <b>${gameState.world}</b></div><div>徳: <b>${gameState.virtue}</b></div><div>罪: <b>${gameState.sin}</b></div><div>ターン: <b>${gameState.turn}</b></div><div>出目: <b>${gameState.dice||'-'}</b></div><div>周回: <b>${gameState.lap}</b></div><div>どっくり: <b>${gameState.innerTrips}回</b></div><div>記録: <b>${JSON.parse(localStorage.getItem('tanbaRecord')||'{"best":null,"maxVirtue":0,"clear":0}').clear}回</b></div>`;document.getElementById('worldTitle').textContent=gameState.world+'ボード';buildBoard();renderZoneTags();}
 function appendLog(t){logEl.textContent=`[${new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}] ${t}\n`+logEl.textContent;}
 function beep(f=440,d=0.08){try{const a=new(window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),g=a.createGain();o.type='square';o.frequency.value=f;o.connect(g);g.connect(a.destination);o.start();g.gain.setValueAtTime(0.07,a.currentTime);g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+d);o.stop(a.currentTime+d);}catch(e){}}
 const DICE_FACES=['⚀','⚁','⚂','⚃','⚄','⚅'];
